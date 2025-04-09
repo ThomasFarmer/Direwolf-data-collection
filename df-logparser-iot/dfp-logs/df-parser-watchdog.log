@@ -1,0 +1,5 @@
+2025-04-09 10:36:45,498|DFP-Logger|MainThread|DEBUG|Direwolf log with today's date should be 2025-04-09.log
+2025-04-09 10:36:45,498|DFP-Logger|MainThread|INFO|Current day's Direwolf message log found: df-logparser-iot/testlogpath/2025-04-09.log - Service starting up...
+2025-04-09 10:37:16,206|DFP-Logger|Thread-1|DEBUG|File modified: df-logparser-iot/testlogpath/2025-04-09.log
+2025-04-09 10:37:16,206|DFP-Logger|Thread-1|DEBUG|File modified: df-logparser-iot/testlogpath/2025-04-09.log
+2025-04-09 10:37:16,211|DFP-Logger|Thread-1|DEBUG|File modified: df-logparser-iot/testlogpath
