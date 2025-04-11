@@ -4,6 +4,7 @@ from watchdog.events import FileSystemEventHandler
 import json, csv, time, datetime, os, sys
 import logging
 from logging.handlers import RotatingFileHandler
+from direwolf_logparser_sender import DirewolfDataSender
 
 class DFParserUtil():
     """A class mostly to collect and organize some utility functions I plan to use in this implementation. Most of them are uwritten to be used as classmethods."""
@@ -130,7 +131,8 @@ class DFParserUtil():
         log_in_list = []
         with open(logfile, newline='') as csvfile:
             logreader = csv.reader(csvfile, delimiter=',', quotechar='|')
-            for skip in range(0,skip_to_line):
+            next(logreader)
+            for skip in range(0,skip_to_line-1):
                 next(logreader)
             for logrow in logreader:
                 lr = cls.decode_log_row(logrow=logrow)
@@ -141,7 +143,10 @@ class DFParserUtil():
     
 class DFParserHandler(FileSystemEventHandler):
     def __init__(self):
-        self.progress_file_path = "./df-logparser-iot/progress.json"
+        self.progress_file_path = "./progress.json"
+        self.df_data_sender = DirewolfDataSender()
+        conn_res = self.df_data_sender.connect_to_aws()
+        dfp_logger.debug("After attempting to connect to AWS, the following result was handed back to the client: {}".format(conn_res))
         super().__init__()
     def on_created(self, event):
         print("File created: {}".format(event.src_path))
@@ -157,17 +162,20 @@ class DFParserHandler(FileSystemEventHandler):
             for log_row in proc_log:
                 gjs_point = DFParserUtil.create_geojson_3d_point(log_row)
                 print(gjs_point)
+                dfp_logger.info(gjs_point)
+                self.df_data_sender.send_message_to_aws(gjs_point)
             DFParserUtil.save_log_file_progress(self.progress_file_path, event.src_path, current_progress + len(proc_log))
             return super().on_modified(event)
         else:
             print("not file: {}".format(event.src_path))
 
 if __name__ == "__main__":
-    dfp_logger = DFParserUtil.setup_logger("DFP-Logger", "./df-logparser-iot/dfp-logs/df-parser-watchdog.log",5000,4)
+    dfp_logger = DFParserUtil.setup_logger("DFP-Logger", "./df-parser-watchdog.log",500000,4)
     current_file = DFParserUtil.get_todays_date() + ".log"
     print("Direwolf log with today's date should be {}".format(current_file))
     dfp_logger.debug("Direwolf log with today's date should be {}".format(current_file))
-    folder_path = "./df-logparser-iot/testlogpath"
+    #folder_path = "./testlogpath"
+    folder_path = "/home/ha7hat/direwolf-logs/"
     current_joined_path = os.path.join(folder_path, current_file)
     #watchdog_path = Path("")
     watchdog_path = Path(current_joined_path)
