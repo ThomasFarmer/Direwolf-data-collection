@@ -23,9 +23,9 @@ class DFParserUtil():
         geojson_point["geometry"]["type"] = "Point"
         try:
             if logrow["altitude"] == '':
-                geojson_point["geometry"]["coordinates"] = [float(logrow["longitude"]), float(logrow["latitude"]), float(0.0)]
+                geojson_point["geometry"]["coordinates"] = [float(logrow["latitude"]), float(logrow["longitude"]), float(0.0)]
             else:
-                geojson_point["geometry"]["coordinates"] = [float(logrow["longitude"]), float(logrow["latitude"]), float(logrow["altitude"])]
+                geojson_point["geometry"]["coordinates"] = [float(logrow["latitude"]), float(logrow["longitude"]), float(logrow["altitude"])]
         except ValueError as crd_ex:
             logging.error("Exception raised while writing coordinates to GeoJSON 3D Point object, coordinates failed to convert to float: {}, {}, {}. Using default values instead.".format(logrow["longitude"],logrow["latitude"], logrow["altitude"]), crd_ex)
 
