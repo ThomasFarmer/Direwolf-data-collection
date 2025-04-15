@@ -23,9 +23,9 @@ the data stream to the **Digimode USB interface** made by [xggcomms](https://xgg
 Setting up the radio connection:
 - Connect the audio jacks to the soundcard's microphone and sound output ports.
 - Connect the USB connector to one of the USB ports on the PC, this is how most radio-related software products re able be able to control the radio remotely.
-- Connect our CAT serial port to the corresponding port on the back of the radio. 
-- Connect the PKT jack to the corresponding port on the back of the radio.
-- Connect the Data in/out jack to the corresponding port on the back of the radio.
+- Connect our CAT serial port to the corresponding port on the back of the radio. This DB-9 connector is used for interconnection to a PC's serial port in order to achieve computer-assisted operation.  
+- Connect the PKT jack to the corresponding port on the back of the radio. The PKT or "packet" jack is a 6-pin mini DIN connector which accepts AFSK input, alongside fixed-level receiver audio output, PTT, and ground lines.
+- Connect the Data in/out jack to the corresponding port on the back of the radio.This 3.5 mm 3-pin jack provides constant-level receiver audio output on the ring contact, and accepts transmit audio input and PTT on the tip.
 - Make sure that the PC has the required [drivers](https://ftdichip.com/drivers/d2xx-drivers/) installed to be able to communicate properly with the USB interface.
 ![info](https://raw.githubusercontent.com/ThomasFarmer/Direwolf-data-collection/refs/heads/main/doc/radio-conn.png)
 
