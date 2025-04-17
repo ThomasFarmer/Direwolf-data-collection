@@ -36,20 +36,80 @@ Normally we can connect other APRS monitoring applications through a serial port
 
 **II. IoT Core deployment.**
 
-The **direwolf_logparser_watchdog** unit will pick up any new entries made by direwolf, and will parse it into a ready-to-send format for the IoT Core deployment.
+The **direwolf_logparser_watchdog** unit will pick up any new entries made by direwolf, and will parse it into a ready-to-send format for the IoT Core deployment, and is relying on a class defined in the **direwolf_logparser_sender** script to communicate with AWS.
 
-*TBD...*
+The IoT Core deployment section of this project has two main dependencies, which we need to install for this project to be functional:
 
+- The [watchdog](https://pypi.org/project/watchdog/) library for python provides a well-tested solution for monitoring changes in files and directory structures. The **direwolf_logparser_watchdog.py** script relies on this exact library to monitor changes in the direwolf log dumps, where we scan for geographic data, which we plan to display later in our cloud-hosted map application. 
+- The [awsiotsdk](https://pypi.org/project/awsiotsdk/) library handles the communication between out IoT Core deployment, and AWS. For this, we need to create, activate and download a certificate bundle. The  **direwolf_logparser_sender.py** script looks up the path for these certificate files from environment variables, which can be set up manually, or by editing the .bashrc file. 
+These are the following:
+
+The IoT endpoint is an account level url, which allow us to communicate with IoT Core. The expected value of the variable should look something like this: <br/> **DF_COLLECTOR_IOT_ENDPOINT** - xxxxxxxxxxxxxx-ats.iot.eu-central-1.amazonaws.com
+
+The thing name we use in our deployment. The default value for this project is the following: <br/> **DF_COLLECTOR_CLIENT_ID** - dwc_poc_data_collection_thing
+
+The certificate bundle AWS provides us consists of 5 files, 3 of which we need to refer in the following environment variables for the data upload to function. These are the certificate.pem.crt file, the private.pem.key file, and the root certificate. <br/> **DF_COLLECTOR_CERT_PATH** - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-certificate.pem.crt <br/> **DF_COLLECTOR_PRIVATE_KEY** - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-private.pem.key <br/> **DF_COLLECTOR_ROOT_CA** - AmazonRootCA1.pem
+
+The certificate folder tells our script where our certificates are stored. Default value is /certs, but it can be anything, this value will be evaulated by the python's os.path.join function later in the code.
+**DF_COLLECTOR_CERT_FOLDER** - ./certs
+
+And finally we need to tell the software where direwolf dumps its log files. This is entirely up to the user, as this value is set in the direwolf config file. <br/> 
+**DF_LOG_PATH** - /home/someuser/direwolf-logs
+
+The two external dependency libraries are mentioned in the attached requirements.txt file. 
+
+To run the module, we just simply need to call **python3 direwolf_logparser_watchdog.py**. 
+
+        
 **III. Cloud-hosted infrastructure.**
 
-*TBD...*
-[awsgi](https://github.com/slank/awsgi) 
-[flask](https://flask.palletsprojects.com/en/stable/) 
+The two lambda functions hosted in AWS also require a few specific libraries.
+First, both functions rely heavily on the functionality provided by the [boto3](https://pypi.org/project/boto3/) library, however this one is included by default for all lambda functions (we only need to install this library if we're using it outside of the lambda environments).
+On top of that, the second function, the **aprs-map** function is a simple [flask](https://flask.palletsprojects.com/en/stable/) application, which relies on the [awsgi](https://github.com/slank/awsgi) library in order for it to be able to be hosted as a lambda function. Both of these libraries can be found in form of zip files, prepared to be deployed as layers in this repository. We'll talk more about it, as we discuss the contents of the cloudformation templates.
+
+***Deployment:***
+The cloudformation template package is divided into 4 parts, and they should be deployed in the following order:
+1.  [Policies](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-01-policies.yaml). 
+2. [Callsign data updater function, plus the Callsign data DynamoDB table](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-02-lambda-to-dynamo.yaml)
+3. [IoT Core deployment](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-03-iot.yaml)
+4. [APRS Map function](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-04-lambda-to-map.yaml)
+<br/>
 
 
-### Step-by-step installation
 
-*TBD...*
+**1. The policy template** --> [Link to template](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-01-policies.yaml). 
+<br/>
+**IAMRoleCallsigndataUpdaterRoleForDirewolf**: This is the Lambda role used by both lambda functions. It is a loose policy, allowing for most DynamoDB-related actions to be performed on one given table.
+
+**IoTPolicyForDireWolf**: This is also a loosely defined IoT policy used by the project. Normally it is advised to use this to restrict access, but due to of time constrains, I did not introduce any restrictions here.
+
+
+
+**2.  Callsign data updater and DynamoDB table** --> [Link to template](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-02-lambda-to-dynamo.yaml). 
+<br/>
+**LambdaFunctionCallsigndataupdater**: This function is responsible for catching any incoming MQTT messages, and dumping it in the DynamoDB table. It has no other purpose then to fill up the table with any data which triggers it, which means that I've decided to keep it as part of the template for easier deployment, since the whole thing can be written down on a napkin anyway. The only library it requires besides some base python ones is the above mentioned [boto3](https://pypi.org/project/boto3/), which is available by default.
+
+**DynamoDBTableCallsigndata**: This table stores our callsign and location data. Any APRS packet which reaches our antenna (and we're able to decode it) gets added to this database. To avoid duplicate entries, the callsign is used as the index, so ham operators on the move get their data constantly updated. 
+
+
+
+**3. IoT Core deployment** --> [Link to template](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-03-iot.yaml)
+<br/>
+**DirewolfDataCollectionIoTTopicRule**: This is the IoT Topic rule we use to monitor data appearing on the "aprs/geojson" topic, and feed it to the Callsign data updated function.
+
+**DirewolfDataCollectionThing**: This is the IoT Thing we have in our stack, which is the client device of the local deployment from AWS-s perspective. It's purpose is to be the extension of the AWS cloud on our local computer, and collect data in various manners - through our **direwolf_logparser_watchdog** and **direwolf_logparser_sender** scripts in this case, as they are authenticated to talk to AWS in the "thing's name". 
+
+
+**LambdaPermissionFunctioncallsigndataupdater**: The lambda permission is the link between our IoT rule and the lambda itself. Whenever data appears on the topic, and the rule gets triggered, only with this permission present can the lambda get the trigger event.  
+
+**4. APRS Map function** --> [Link to template](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-04-lambda-to-map.yaml) 
+**AprsMapLambdaLayerFlask**: This is the lambda layer containing Flask. It requires an S3 bucket and the S3 key (zipfile name) as a parameter.
+**AprsMapLambdaLayerAwsgi**: This is the lambda layer containing aws-gi. It requires an S3 bucket and the S3 key (zipfile name) as a parameter.
+**AprsMapLambdaFunction**: This is our flask application hosting the map. The map itself is using leaflet.js and jquery to operate. Source code and a compressed zip file version of the function can be found here: [Link to folder](https://github.com/ThomasFarmer/Direwolf-data-collection/tree/main/aprs-map).
+**AprsMapPermissionForURL**: In order to have access to the lambda URL, we need to set up a permission first. 
+**AprsMapLambdaUrl**: This will be the link we can use to see our leaflet map hosted by the flask application. 
+
+
 
 ### Usage and screenshots
 
