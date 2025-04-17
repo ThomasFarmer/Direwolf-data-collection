@@ -1,15 +1,10 @@
 <!DOCTYPE html>
 <head>
-    <!--<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""/>-->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='leaflet.css') }}">
     <script type="text/javascript" src="{{ url_for('static', filename='leaflet.js') }}"> </script>
     <script type="text/javascript" src="{{ url_for('static', filename='jquery-1.12.4.js') }}"> </script>
-   
 </head>
 <body>
-    <h1 id="testh1">asd</h1>
     <div id="map" style="height:1028px"></div>
     <script>
         let current_callsigns = [];
@@ -19,52 +14,33 @@
                 dataType: 'json', 
                 cache: false
             }).done(function(data) {
+                // Clean up the contents of the marker layer group, to avoid having a duplicate added every 5 seconds, 
+                // resulting in thousands of duplicate markers being displayed.
                 map.eachLayer(function(layer) {
                     layer.removeFrom(callsign_markers);
                 });
-                //map.clearLayers();
-                // Update the content of a specific element with the data received
-                //console.log(data);
-                //console.log(typeof(data));
-                // circle version
-                // for (const element of data) {
-                //     console.log(element.geometry.coordinates);
-                //     var aprspoint = L.circle([element.geometry.coordinates[0],element.geometry.coordinates[1]], {
-                //         color: 'red',
-                //         fillColor: '#f03',
-                //         fillOpacity: 0.5,
-                //         radius: 10
-                //     }).addTo(map);
-                //     aprspoint.addTo(map);
-                //     console.log(element.properties.name);
-
-                // }
-                // marker version
+                // Loop through every geojson object and put down a marker in the given location, 
+                // and add the marker ot the layer group.
                 for (const element of data) {
-                    console.log(element.geometry.coordinates);
-                    // var aprspoint = L.circle([element.geometry.coordinates[0],element.geometry.coordinates[1]], {
-                    //     color: 'red',
-                    //     fillColor: '#f03',
-                    //     fillOpacity: 0.5,
-                    //     radius: 10
-                    // }).addTo(map);
-                    // aprspoint.addTo(map);
                     var aprspoint = L.marker([element.geometry.coordinates[0],element.geometry.coordinates[1]]).bindTooltip(element.properties.name, {
                         permanent: true, // Keep the tooltip always visible
                         direction: 'top', // Position the tooltip above the marker
                         offset: L.point(0, 0) // Adjust the offset to position the tooltip correctly
                     }).addTo(callsign_markers);
+                    console.log("Adding geometry:" + JSON.stringify({"callsign": element.properties.name, "location": [element.geometry.coordinates[0],element.geometry.coordinates[1]]}));
                     current_callsigns.push(aprspoint);
                 }
                 
             });
-        }, 5000); // 5000 milliseconds = 5 seconds
+        }, 5000); // 5 seconds delay before querying again
     
-        var map = L.map('map').setView([16.469167, 48.157333], 13);
+        // openstreetmap layer
+        var map = L.map('map').setView([47.157333, 18.50167], 8);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
+        // define marker layer group
         var callsign_markers = L.layerGroup([]).addTo(map);
 
     </script>

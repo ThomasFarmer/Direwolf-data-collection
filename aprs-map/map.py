@@ -1,34 +1,32 @@
 
-from flask import Flask, jsonify, request, render_template
-import requests
+from flask import Flask, render_template
 import time
 import awsgi
 import boto3
 import ast
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "lkkajdghdadkglajkgah"
 
 def proc_geo_type():
+    cs_table = os.environ['CALLSIGNTABLE']
     dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('callsign-data')
+    table = dynamodb.Table(cs_table)
 
     response = table.scan()
     data = response['Items']
     processed_geojson = []
     for datarow in data:
-        callsign = datarow["callsign"]
         try:
             geojson = ast.literal_eval(datarow["geojson"])
             if geojson["geometry"].get("coordinates") != None:
                 processed_geojson.append(geojson)
         except Exception as genex:
             print(genex)
-    print("proc_geo_type: {}".format(type(processed_geojson)))
     return processed_geojson
 
 @app.route("/", methods=['GET'])
-#@app.route("/aprsmap", methods=['GET'])
 def show_map():
     return render_template('map.html')
 
