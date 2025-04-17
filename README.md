@@ -60,6 +60,7 @@ The two external dependency libraries are mentioned in the attached requirements
 
 To run the module, we just simply need to call **python3 direwolf_logparser_watchdog.py**. 
 
+![log](https://raw.githubusercontent.com/ThomasFarmer/Direwolf-data-collection/refs/heads/main/doc/iot_log_example.png)
         
 **III. Cloud-hosted infrastructure.**
 
@@ -91,7 +92,7 @@ The cloudformation template package is divided into 4 parts, and they should be 
 
 **DynamoDBTableCallsigndata**: This table stores our callsign and location data. Any APRS packet which reaches our antenna (and we're able to decode it) gets added to this database. To avoid duplicate entries, the callsign is used as the index, so ham operators on the move get their data constantly updated. 
 
-
+![table](https://raw.githubusercontent.com/ThomasFarmer/Direwolf-data-collection/refs/heads/main/doc/dynamo_table_items.png)
 
 **3. IoT Core deployment** --> [Link to template](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-03-iot.yaml)
 <br/>
@@ -99,18 +100,38 @@ The cloudformation template package is divided into 4 parts, and they should be 
 
 **DirewolfDataCollectionThing**: This is the IoT Thing we have in our stack, which is the client device of the local deployment from AWS-s perspective. It's purpose is to be the extension of the AWS cloud on our local computer, and collect data in various manners - through our **direwolf_logparser_watchdog** and **direwolf_logparser_sender** scripts in this case, as they are authenticated to talk to AWS in the "thing's name". 
 
-
 **LambdaPermissionFunctioncallsigndataupdater**: The lambda permission is the link between our IoT rule and the lambda itself. Whenever data appears on the topic, and the rule gets triggered, only with this permission present can the lambda get the trigger event.  
+
+![mqtt](https://raw.githubusercontent.com/ThomasFarmer/Direwolf-data-collection/refs/heads/main/doc/iot_mqtt_test.png)
 
 **4. APRS Map function** --> [Link to template](https://github.com/ThomasFarmer/Direwolf-data-collection/blob/main/cf/dwc-04-lambda-to-map.yaml) 
 **AprsMapLambdaLayerFlask**: This is the lambda layer containing Flask. It requires an S3 bucket and the S3 key (zipfile name) as a parameter.
 **AprsMapLambdaLayerAwsgi**: This is the lambda layer containing aws-gi. It requires an S3 bucket and the S3 key (zipfile name) as a parameter.
 **AprsMapLambdaFunction**: This is our flask application hosting the map. The map itself is using leaflet.js and jquery to operate. Source code and a compressed zip file version of the function can be found here: [Link to folder](https://github.com/ThomasFarmer/Direwolf-data-collection/tree/main/aprs-map).
 **AprsMapPermissionForURL**: In order to have access to the lambda URL, we need to set up a permission first. 
-**AprsMapLambdaUrl**: This will be the link we can use to see our leaflet map hosted by the flask application. 
+**AprsMapLambdaUrl**: This will be the link we can use to see our leaflet map hosted by the flask application. This link can be found in AWS's management console next to the lambda function.
+
+![lambdaurl](https://raw.githubusercontent.com/ThomasFarmer/Direwolf-data-collection/refs/heads/main/doc/lambda_url.png)
+
+### Usage and notes
+
+After this lengthy setup process, we can finally start gathering data.
+To quickly summarize how to start the project:
+- Turn on the radio, make sure it's on 144.800 MHz,
+- Start Direwolf, make sure we're monitoring it's log folder,
+- Start the direwolf_logparser_watchdog script, make sure the certificates and the environment variables are all set,
+- Acquire the Lambda URL by checking our APRS Map lambda in the management console, or use the aws cli tool to query the exported value of the APRS map stack (or the URL itself directly).
+- Visit the link in a browser, and wait for the data to be populated. The map refreshes its content every 5 seconds, so we should get some data relatively quickly. 
+
+***Notes:*** *The map application is very rudimentary, so unlike in other, full-fledged APRS applications there is no way to trace movement, or do queries or anything.* 
+
+*The map also disregards time, so any marker represents the last known location of the amateurs heard. They can be outside of our hearing range or stopped broadcasting.*
+
+![map](https://raw.githubusercontent.com/ThomasFarmer/Direwolf-data-collection/refs/heads/main/doc/aprs_map_screenshot.png)
 
 
 
-### Usage and screenshots
 
-*TBD...*
+
+
+
