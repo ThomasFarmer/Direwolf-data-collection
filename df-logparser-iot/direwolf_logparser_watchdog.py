@@ -174,10 +174,8 @@ if __name__ == "__main__":
     current_file = DFParserUtil.get_todays_date() + ".log"
     print("Direwolf log with today's date should be {}".format(current_file))
     dfp_logger.debug("Direwolf log with today's date should be {}".format(current_file))
-    #folder_path = "./testlogpath"
     folder_path = "/home/ha7hat/direwolf-logs/"
     current_joined_path = os.path.join(folder_path, current_file)
-    #watchdog_path = Path("")
     watchdog_path = Path(current_joined_path)
 
     dfp_observer = Observer()
