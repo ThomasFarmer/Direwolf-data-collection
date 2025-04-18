@@ -3,6 +3,8 @@
 ### Project description
 A small portfolio project showcasing data collection of APRS data packets, hosting it in AWS and visualizing it.
 
+![maponly](https://raw.githubusercontent.com/ThomasFarmer/Direwolf-data-collection/refs/heads/main/doc/maponly.png)
+
 **Planned architecture:**
 
 The project aims to simulate the need to do some periodic data collection in an industrial environment. I plan to showcase here some of the basic solutions I've learned while working in such environments. 
@@ -31,7 +33,6 @@ Setting up the radio connection:
 
 After establishing the hardware connection, the computer tasked with interpreting digital traffic has to have the some sort of software to do so. In our case, the PC connected to the radio is an old desktop computer currently running Linux Mint. The system has a copy of [Direwolf](https://github.com/wb2osz/direwolf) installed, which is one of the key requirements of this project. Direwolf is a modern, software based TNC (Terminal Node Controller) which allows our APRS packets to be transcribed from analoge sound format into something more comprehensible for our purposes. 
 Normally we can connect other APRS monitoring applications through a serial port connection, such as [YAAC](https://www.ka2ddo.org/ka2ddo/YAAC.html) to our running Direwolf instance, but the purpose of this project is to "simulate" data collection from data log collection, so instead of the normal way, our IoT application will monitor the log files produced by direwolf, and we will only use YAAC (or the [aprs.fi](www.aprs.fi) service) to check if the collected data is in fact accurate.
-
 
 
 **II. IoT Core deployment.**
